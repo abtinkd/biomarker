@@ -7,7 +7,7 @@ import pickle
 import copy
 import pandas as pd
 import numpy as np
-import sys
+import sys,os
 
 def generate_sub_orig_pattern(trNode, path_info, path_num):
     sub_vs_orig_pattrn_dic = {"PathCode": [str(path_info['TreeNum'])+':'+str(path_num), str(path_info['TreeNum'])+':'+str(path_num+1)],
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Extract patterns from trees.')
-    parser.add_argument('--sorc', help='Input file of the trees. (Default= ./trees.pkl)', default='./trees.pkl')
+    parser.add_argument('--sorc', help='Input file of the trees. (Default= trees.pkl)', default='./trees.pkl')
     parser.add_argument('--dest', help='Output folder to save the patterns. (Default= ./Patterns)', default='Patterns')
     args = parser.parse_args()
     
@@ -189,5 +189,8 @@ if __name__ == '__main__':
     sub_vs_sub_DF['TestAliveSubPopFraction'] = pd.Series(
         (sub_vs_sub_DF['TestLeftAlivePopulation']+sub_vs_sub_DF['TestRightAlivePopulation'])/sub_vs_sub_DF['TestBaseAlivePopulation'], index = sub_vs_sub_DF.index)
 
-    sub_vs_orig_DF.to_csv("{0}/pkl_pattern_sub_orig.csv".format(args.dest))
-    sub_vs_sub_DF.to_csv("{0}/pkl_pattern_sub_sub.csv".format(args.dest))
+    out_path = '/'.join(args.sorc.split('/')[:-1])+'/'+args.dest
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    sub_vs_orig_DF.to_csv("{0}/pkl_pattern_sub_orig.csv".format(out_path))
+    sub_vs_sub_DF.to_csv("{0}/pkl_pattern_sub_sub.csv".format(out_path))
