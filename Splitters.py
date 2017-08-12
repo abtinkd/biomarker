@@ -115,7 +115,7 @@ class SplitCoef_statsmod(object):
     def mask_true(self, data, class_lbl, weights=None):
         if self.splitr is None:
             return data, class_lbl
-        mask = self.splitr(data) | pd.isnull(data[self.feature])
+        mask = self.splitr(data) #| pd.isnull(data[self.feature])
         if weights is not None:
             nanLst = np.array(np.isnan(data[self.feature]), dtype=bool)
             weights[nanLst] = weights[nanLst] * self.ratio
@@ -125,7 +125,7 @@ class SplitCoef_statsmod(object):
     def mask_false(self, data, class_lbl, weights=None):
         if self.splitr is None:
             return data, class_lbl
-        mask = (~self.splitr(data)) | pd.isnull(data[self.feature])
+        mask = (~self.splitr(data)) #| pd.isnull(data[self.feature])
         if weights is not None:
             nanLst = np.array(np.isnan(data[self.feature]), dtype=bool)
             weights[nanLst] = weights[nanLst] * (1-self.ratio)

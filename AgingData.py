@@ -21,6 +21,7 @@ from CustomTree import Tree as CustomTree
 from datetime import datetime
 #import cPickle as pickle
 import pickle
+import PatternFinder as ptfd
 
 class DTtest:
     def __init__(self, args):
@@ -133,6 +134,8 @@ def finish(res, dest):
     if not os.path.exists(dest):
         os.makedirs(dest)
     summaries = pd.DataFrame()
+    sub_vs_orig_DF = pd.DataFrame()
+    sub_vs_sub_DF = pd.DataFrame()
     trees = list()
     for t in res:
         try:
@@ -145,10 +148,15 @@ def finish(res, dest):
         summaries = summaries.append(Summary(t, 1, t.tree.treeNum, "Root"))
         summaries = summaries.append(Summary(t.left, 2, t.tree.treeNum, "Left"))
         summaries = summaries.append(Summary(t.right, 2, t.tree.treeNum, "Right"))
+        s_v_o, s_v_s = ptfd.patterns(t, 2)
+        sub_vs_orig_DF = sub_vs_orig_DF.append(s_v_o)
+        sub_vs_sub_DF = sub_vs_sub_DF.append(s_v_s)
         trees.append(t)
  
     print(summaries)
     summaries.to_csv("./{0}/summary.csv".format(dest))
+    sub_vs_orig_DF.to_csv("./{0}/pattern_sub_orig.csv".format(dest))
+    sub_vs_sub_DF.to_csv("./{0}/pattern_sub_sub.csv".format(dest))
     with open("{0}/trees.pkl".format(dest), 'wb') as f:
         pickle.dump(trees, f, pickle.HIGHEST_PROTOCOL)
 
@@ -187,7 +195,9 @@ def process(args):
         
     print(datetime.now().time())
 
-    cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
+    # cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
+    ds = pickle.load(open('/home/abt/Downloads/ds.pkl', 'rb'))
+    cv_scores = [build_tree(idx) for idx in ds]
     finish(cv_scores, args.dest)
     return
     

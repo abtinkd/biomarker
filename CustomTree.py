@@ -218,15 +218,21 @@ class TestNode:
             lbl = classes[self.node_lbl]
         else:
             lbl = self.node_lbl
-        score = self.splitr.score()
-        val = score-self.val if score is not None else self.val
-        return "{0} [label=<{1} <br/> Diff: {2:.6f} <br/> {3} ({4}) <br/> {5:.4f}>];\n".format(
+        return "{0} [label=<{1} <br/> {2} ({3}) <br/> {4:.4f}>];\n".format(
             self.node_id,
-            self.splitr.full_desc(labels, self.val),
-            val,
+            self.splitr.full_desc(labels, self.val),            
             self.counts,
             self.counts.sum(),
             self.class_props)
+        # score = self.splitr.score()
+        # val = score-self.val if score is not None else self.val
+        # return "{0} [label=<{1} <br/> Diff: {2:.6f} <br/> {3} ({4}) <br/> {5:.4f}>];\n".format(
+        #     self.node_id,
+        #     self.splitr.full_desc(labels, self.val),
+        #     val,
+        #     self.counts,
+        #     self.counts.sum(),
+        #     self.class_props)
     def __repr__(self):
         return Template('''digraph Tree {
 node [shape=box, style="rounded", color="black", fontname=helvetica] ;
