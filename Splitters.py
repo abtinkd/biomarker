@@ -24,7 +24,7 @@ def testCoef(args, node):
     return [i, v, Diff, Coef1, Coef2, mask.sum(), (~nanmsk).sum()]
 
 class SplitCoef_statsmod(object):
-    def __init__(self, data, class_lbl, weights, scale=0.5, min_split=0.25):
+    def __init__(self, data, class_lbl, weights, args, scale=0.5, min_split=0.25):
         """
         data      : features
         class_lbl : classifier
@@ -32,6 +32,9 @@ class SplitCoef_statsmod(object):
         scale     : weight scaling factor for missing data
         data, class_lbl, and weights must be the same length.
         """
+        self.prog_var = args.prog_var # prognostic variable (sbp)
+        self.ev_state = args.ev_state # event status (death)
+        self.ev_time = args.ev_time # time to event (ttodeath)
         self.feature = None
         self.value = None
         self.idx = None
@@ -62,7 +65,7 @@ class SplitCoef_statsmod(object):
         for i in range(self.data.shape[1]-2): 
             unq_val = np.unique(self.data[self.labels[i]])
             lbl = self.labels[i]
-            if lbl in ["sbp", "death", "ttodeath"]  or len(unq_val[~np.isnan(unq_val)]) == 1:
+            if lbl in [self.prog_var, self.ev_state, self.ev_time]  or len(unq_val[~np.isnan(unq_val)]) == 1:
                 continue
             for v in (unq_val[~np.isnan(unq_val)])[:-1]:
                 # Fitting cox models
@@ -92,7 +95,7 @@ class SplitCoef_statsmod(object):
         self.ratio = self.idx[5]/(self.data.shape[0]-self.nancount)
         
     def cox_coef_jit(self, data, class_lbl, weights):
-        mod = PHReg(data.ttodeath, data.sbp, status=class_lbl)
+        mod = PHReg(data[self.ev_time], data[self.prog_var], status=class_lbl)
         return mod.fit_regularized(alpha=weights, warn_convergence=False)
 
     def cox_coef(self, data, class_lbl, weights, llf=False):

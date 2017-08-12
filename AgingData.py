@@ -22,26 +22,18 @@ from datetime import datetime
 #import cPickle as pickle
 import pickle
 
-'''
-Import data
-dropna
-creates => data, train, test, labels
-'''
 class DTtest:
-    def __init__(self):
+    def __init__(self, args):
         pd.set_option('display.max_columns', 10)
         pd.set_option('precision', 3)
         np.set_printoptions(precision=3,suppress=True)
 
-        self.raw = pd.read_csv("Biomarker_Data_Fern_8_29_16.csv", na_values=[".m", ".e", ".a", ".t"])
+        self.raw = pd.read_csv(args.sorc, na_values=args.naval)
         
         # Drop all rows with missing values
-        self.data = self.raw.dropna(subset=["sbp", "death", "ttodeath"]).round(2).round(
-            {
-                'mmse':0,
-                'height':1,
-                'weight':1,
-            }).copy()
+        self.data = self.raw.dropna(subset=[args.prog_var, args.ev_state, args.ev_time])\
+                .round(args.prec)\
+                .copy()
 
         self.train, self.test = train_test_split(self.data, train_size=0.80, random_state=7)
         self.labels = list(self.data)
@@ -126,11 +118,14 @@ def Testing():
 
     print(summaries)
 
-def cross_val(idxs, data, pool, min_split):
+def cross_val(idxs, args, data, pool, min_split):
     n, (train_idx, test_idx) = idxs
-    tr = CustomTree(spl.SplitCoef_statsmod, spl.SplitCoef_statsmod, max_depth=2, treeNum=n)
-    tr.fit(data.iloc[train_idx], data.death.iloc[train_idx], pool=pool, min_split=min_split)
-    t = tr.test(data.iloc[test_idx], data.death.iloc[test_idx])
+
+    split_func = functools.partial(spl.SplitCoef_statsmod, args= args)
+
+    tr = CustomTree(split_func, split_func, max_depth=2, treeNum=n)
+    tr.fit(data.iloc[train_idx], data[args.ev_state].iloc[train_idx], pool=pool, min_split=min_split)
+    t = tr.test(data.iloc[test_idx], data[args.ev_state].iloc[test_idx])
     print(datetime.now().time())
     return t
 
@@ -159,9 +154,11 @@ def finish(res, dest):
 
 
 def process(args):
-
-    test = DTtest()
-    data = test.data[list(test.data)[3:-6]]
+    test = DTtest(args)
+    labels = list(set(list(test.data))-set(args.filter))
+    data = test.data[labels]
+    print('Involved variables:')
+    print(sorted(labels))
 
     if args.sub is not None:
         data = data[:args.sub]
@@ -169,26 +166,27 @@ def process(args):
     if not os.path.exists(args.dest):
         os.makedirs(args.dest)
 
-    ss = ShuffleSplit(n_splits=args.nsplits, test_size=args.test, random_state=args.seed)
-    build_tree = functools.partial(cross_val, data=data, min_split=args.min_split)
+    ss = ShuffleSplit(n_splits=args.nsplits, test_size=args.test, random_state=args.seed)    
+    build_tree = functools.partial(cross_val, args=args, data=data, min_split=args.min_split)
 
 
     if args.dask is not None:
         from distributed import Client
         client = Client(args.dask)
         print(client)
-        build_tree = functools.partial(cross_val, data=data, pool=client, min_split=args.min_split)
+        build_tree = functools.partial(cross_val, args=args, data=data, pool=client, min_split=args.min_split)
     elif args.nprocs is not None:
         from multiprocessing import Pool
         pool = Pool(processes=args.nprocs)
-        build_tree = functools.partial(cross_val, data=data, pool=pool, min_split=args.min_split)
+        build_tree = functools.partial(cross_val, args=args, data=data, pool=pool, min_split=args.min_split)
     else:
         from multiprocessing import Pool
         pool = Pool(processes=1)
-        build_tree = functools.partial(cross_val, data=data, pool=pool, min_split=args.min_split)
+        build_tree = functools.partial(cross_val, args=args, data=data, pool=pool, min_split=args.min_split)
         print(hasattr(pool, "gather"))
         
     print(datetime.now().time())
+
     cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
     finish(cv_scores, args.dest)
     return
@@ -201,6 +199,16 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Build decision trees using Cox Proportional Hazard models.')
     parser.add_argument('--dest', help='Output folder prefix for trees and summary.', default='CrossVal')
+    parser.add_argument('--sorc', help='Input dataset path. (Default = ./Biomarker_Data_Fern_8_29_16.csv)',\
+                        default='./Biomarker_Data_Fern_8_29_16.csv')
+    parser.add_argument('--ev_time', help='Name of the variable that shows the time to the event of interest. (Default= ttodeath)', default='ttodeath')
+    parser.add_argument('--ev_state', help='Name of the variable that shows the state of the event of interest. (Default= death', default='death')
+    parser.add_argument('--prog_var', help='Name of the prognostic variable. (Default= sbp)', default='sbp')
+    parser.add_argument('--naval', help='NA values in the dataset. (Default= .m .e .a .t)',\
+                        default= ['.m', '.e', '.a', '.t'], nargs = '+')    
+    parser.add_argument('--prec', help='Rounding precision for all features. (Default=2)', default=2, type=int)
+    parser.add_argument('--filter', help='Ignore these variables during the experiments. (Default= id study site stroke ttostroke mi ttomi hf ttohf)', \
+                        default=['id', 'study', 'site', 'stroke', 'ttostroke', 'mi', 'ttomi', 'hf', 'ttohf'], nargs= '+')
     parser.add_argument('--dask', help='Dask scheduler (ip:port)', default=None)
     parser.add_argument('--nprocs', help='Parallel processes (for local only).', default=None, type=int)
     parser.add_argument('--sub', help='Subset of data to process.', default=None, type=int) 
@@ -208,12 +216,10 @@ if __name__ == "__main__":
     parser.add_argument('--test', help='Portion of data in test set.', default=0.4, type=float)
     parser.add_argument('--seed', help='Random seed for splits.', default=7, type=int)
     parser.add_argument('--min_split', help='Minimum portion of data in a split. (Default = 0.25)', default=0.25, type=float)
-    args = parser.parse_args()
+    args = parser.parse_args()    
     
     args.dest = (args.dest + "_n" + str(args.nsplits) +
                      "_s" + str(args.seed) +
                      "_" + datetime.now().strftime('%Y%m%d_%H%M%Z'))
     print(args.dest)
     process(args)
-            
-
