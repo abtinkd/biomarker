@@ -195,9 +195,9 @@ def process(args):
         
     print(datetime.now().time())
 
-    # cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
-    ds = pickle.load(open('/home/abt/Downloads/ds.pkl', 'rb'))
-    cv_scores = [build_tree(idx) for idx in ds]
+    cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
+    # ds = pickle.load(open('/home/abt/Downloads/ds.pkl', 'rb'))
+    # cv_scores = [build_tree(idx) for idx in ds]
     finish(cv_scores, args.dest)
     return
     
