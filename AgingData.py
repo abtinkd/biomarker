@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser(description='Build decision trees using Cox Proportional Hazard models.')
-    parser.add_argument('--dest', help='Output folder prefix for trees and summary.', default='CrossVal')
+    parser.add_argument('--dest', help='Output folder prefix for trees and summary. (Default= CrossVal)', default='CrossVal')
     parser.add_argument('--sorc', help='Input dataset path. (Default = ./Biomarker_Data_Fern_8_29_16.csv)',\
                         default='./Biomarker_Data_Fern_8_29_16.csv')
     parser.add_argument('--ev_time', help='Name of the variable that shows the time to the event of interest. (Default= ttodeath)', default='ttodeath')
@@ -219,12 +219,12 @@ if __name__ == "__main__":
     parser.add_argument('--prec', help='Rounding precision for all features. (Default=2)', default=2, type=int)
     parser.add_argument('--filter', help='Ignore these variables during the experiments. (Default= id study site stroke ttostroke mi ttomi hf ttohf)', \
                         default=['id', 'study', 'site', 'stroke', 'ttostroke', 'mi', 'ttomi', 'hf', 'ttohf'], nargs= '+')
-    parser.add_argument('--dask', help='Dask scheduler (ip:port)', default=None)
-    parser.add_argument('--nprocs', help='Parallel processes (for local only).', default=None, type=int)
-    parser.add_argument('--sub', help='Subset of data to process.', default=None, type=int) 
-    parser.add_argument('--nsplits', help='Number of random subsets.', default=2, type=int)
-    parser.add_argument('--test', help='Portion of data in test set.', default=0.4, type=float)
-    parser.add_argument('--seed', help='Random seed for splits.', default=7, type=int)
+    parser.add_argument('--dask', help='Dask scheduler (ip:port). (Default= None)', default=None)
+    parser.add_argument('--nprocs', help='Parallel processes (for local only). (Default= None)', default=None, type=int)
+    parser.add_argument('--sub', help='Subset of data to process. (Default= None)', default=None, type=int) 
+    parser.add_argument('--nsplits', help='Number of random subsets. (Default= 2)', default=2, type=int)
+    parser.add_argument('--test', help='Portion of data in test set. (Default=0.4 )', default=0.4, type=float)
+    parser.add_argument('--seed', help='Random seed for splits. (Default= 7)', default=7, type=int)
     parser.add_argument('--min_split', help='Minimum portion of data in a split. (Default = 0.25)', default=0.25, type=float)
     args = parser.parse_args()    
     
