@@ -36,7 +36,7 @@ class DTtest:
                 .round(args.prec)\
                 .copy()
 
-        self.train, self.test = train_test_split(self.data, train_size=0.80, random_state=7)
+        # self.train, self.test = train_test_split(self.data, train_size=0.80, random_state=7)
         self.labels = list(self.data)
 
         return
@@ -202,10 +202,7 @@ def process(args):
     return
     
     
-if __name__ == "__main__":
-#    Testing()
-#    sys.exit(0)
-
+def get_args():
     import argparse
     parser = argparse.ArgumentParser(description='Build decision trees using Cox Proportional Hazard models.')
     parser.add_argument('--dest', help='Output folder prefix for trees and summary. (Default= CrossVal)', default='CrossVal')
@@ -226,7 +223,15 @@ if __name__ == "__main__":
     parser.add_argument('--test', help='Portion of data in test set. (Default=0.4 )', default=0.4, type=float)
     parser.add_argument('--seed', help='Random seed for splits. (Default= 7)', default=7, type=int)
     parser.add_argument('--min_split', help='Minimum portion of data in a split. (Default = 0.25)', default=0.25, type=float)
-    args = parser.parse_args()    
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+#    Testing()
+#    sys.exit(0)
+
+    args = get_args()
     
     args.dest = (args.dest + "_n" + str(args.nsplits) +
                      "_s" + str(args.seed) +
