@@ -55,7 +55,7 @@ class SplitCoef_statsmod(object):
         self.min_split = min_split if min_split < 0.5 else 1 - min_split
         self.data = data
         self.class_lbl = class_lbl
-        self.coef, self.loglikelihood = self.cox_coef(data, class_lbl, weights, llf=True)
+        self.coef, self.loglikelihood, self.mod = self.cox_coef(data, class_lbl, weights, llf=True)
 
     def fit(self, pool):
         if self.data is None:
@@ -96,12 +96,13 @@ class SplitCoef_statsmod(object):
         
     def cox_coef_jit(self, data, class_lbl, weights):
         mod = PHReg(data[self.ev_time], data[self.prog_var], status=class_lbl)
-        return mod.fit_regularized(alpha=weights, warn_convergence=False)
+        # return mod.fit_regularized(alpha=weights, warn_convergence=True)
+        return mod.fit()
 
     def cox_coef(self, data, class_lbl, weights, llf=False):
         mod = self.cox_coef_jit(data, class_lbl, weights)
         if llf:
-            return (mod.summary().tables[1]['log HR'][0], mod.llf)
+            return (mod.summary().tables[1]['log HR'][0], mod.llf, mod)
         return mod.summary().tables[1]['log HR'][0]
 
     def splitr(self, dat):
