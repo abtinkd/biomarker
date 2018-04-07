@@ -161,6 +161,30 @@ def finish(res, dest):
         pickle.dump(trees, f, pickle.HIGHEST_PROTOCOL)
 
 
+def save_temp_results(t, dest, summaries, sub_vs_orig_DF, sub_vs_sub_DF):
+    dest = dest + '/temp'
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+    try:
+        graph = pydot.graph_from_dot_data(repr(t.tree))
+        graph.write_svg("{0}/CrossVal{1}_train.svg".format(dest, t.tree.treeNum))
+        graph = pydot.graph_from_dot_data(repr(t))
+        graph.write_svg("{0}/CrossVal{1}_test.svg".format(dest, t.tree.treeNum))
+    except:
+        print("Unexpected error:", t.tree.treeNum, sys.exc_info()[0])
+
+    summaries = summaries.append(Summary(t, 1, t.tree.treeNum, "Root"))
+    summaries = summaries.append(Summary(t.left, 2, t.tree.treeNum, "Left"))
+    summaries = summaries.append(Summary(t.right, 2, t.tree.treeNum, "Right"))
+    s_v_o, s_v_s = ptfd.patterns(t, 2)
+    sub_vs_orig_DF = sub_vs_orig_DF.append(s_v_o)
+    sub_vs_sub_DF = sub_vs_sub_DF.append(s_v_s)
+ 
+    summaries.to_csv("./{0}/summary.csv".format(dest))
+    sub_vs_orig_DF.to_csv("./{0}/pattern_sub_orig.csv".format(dest))
+    sub_vs_sub_DF.to_csv("./{0}/pattern_sub_sub.csv".format(dest))
+
+
 def process(args):
     test = DTtest(args)
     labels = list(set(list(test.data))-set(args.filter))
@@ -195,7 +219,12 @@ def process(args):
         
     print(datetime.now().time())
 
-    cv_scores = [build_tree(idx) for idx in enumerate(ss.split(data))]
+    cv_scores = []
+    summaries, sub_vs_orig_DF, sub_vs_sub_DF = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    for idx in enumerate(ss.split(data)):
+        tree = build_tree(idx)
+        cv_scores.append(tree)
+        save_temp_results(tree, args.dest, summaries, sub_vs_orig_DF, sub_vs_sub_DF)
     # ds = pickle.load(open('/home/abt/Downloads/ds.pkl', 'rb'))
     # cv_scores = [build_tree(idx) for idx in ds]
     finish(cv_scores, args.dest)
@@ -206,8 +235,8 @@ def get_args():
     import argparse
     parser = argparse.ArgumentParser(description='Build decision trees using Cox Proportional Hazard models.')
     parser.add_argument('--dest', help='Output folder prefix for trees and summary. (Default= CrossVal)', default='CrossVal')
-    parser.add_argument('--sorc', help='Input dataset path. (Default = ./Biomarker_Data_Fern_8_29_16.csv)',\
-                        default='./Biomarker_Data_Fern_8_29_16.csv')
+    parser.add_argument('--sorc', help='Input dataset path. (Default = ./data/Biomarker_Data_Fern_8_29_16.csv)',\
+                        default='./data/Biomarker_Data_Fern_8_29_16.csv')
     parser.add_argument('--ev_time', help='Name of the variable that shows the time to the event of interest. (Default= ttodeath)', default='ttodeath')
     parser.add_argument('--ev_state', help='Name of the variable that shows the state of the event of interest. (Default= death', default='death')
     parser.add_argument('--prog_var', help='Name of the prognostic variable. (Default= sbp)', default='sbp')
