@@ -89,6 +89,7 @@ ENV/
 .ropeproject
 
 # Data files
+data/
 *.csv
 
 # R files
@@ -104,3 +105,6 @@ ENV/
 *.doc*
 *.dot
 *.db
+
+# Pycharm
+.idea/
