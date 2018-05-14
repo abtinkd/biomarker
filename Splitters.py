@@ -14,12 +14,21 @@ import pandas as pd
 
 def testCoef(args, node):
     (i, v, mask, nanmsk) = args
-    Coef1 = node.cox_coef(node.data[mask & nanmsk],
-                              node.class_lbl[mask & nanmsk],
-                              node.weights[np.array(mask & nanmsk, dtype=bool)])
-    Coef2 = node.cox_coef(node.data[(~mask) & nanmsk],
-                              node.class_lbl[(~mask) & nanmsk],
-                              node.weights[np.array((~mask) & nanmsk, dtype=bool)])
+    
+    data_lc = node.data[mask & nanmsk]
+    class_lbl_lc = node.class_lbl[mask & nanmsk]
+    # @bt:: if all of the data are from the same class, add one noise
+    if sum(class_lbl_lc!=class_lbl_lc.iloc[0]) == 0:
+        class_lbl_lc.iloc[0] = 1 - class_lbl_lc.iloc[0]
+    Coef1 = node.cox_coef(data_lc, class_lbl_lc, node.weights[np.array(mask & nanmsk, dtype=bool)])
+
+    data_rc = node.data[(~mask) & nanmsk]
+    class_lbl_rc = node.class_lbl[(~mask) & nanmsk]
+    # @bt:: if all of the data are from the same class, add one noise
+    if sum(class_lbl_rc!=class_lbl_rc.iloc[0]) == 0:
+        class_lbl_rc.iloc[0] = 1 - class_lbl_rc.iloc[0]
+    Coef2 = node.cox_coef(data_rc, class_lbl_rc, node.weights[np.array((~mask) & nanmsk, dtype=bool)])
+
     Diff = abs(Coef1-Coef2)
     return [i, v, Diff, Coef1, Coef2, mask.sum(), (~nanmsk).sum()]
 
@@ -43,6 +52,11 @@ class SplitCoef_statsmod(object):
         self.countr = 0
         self.nancount = np.nan
         self.ratio = scale
+
+        # @bt:: if all of the data are from the same class, add one noise
+        if sum(class_lbl!=class_lbl.iloc[0]) == 0:
+            class_lbl.iloc[0] = 1 - class_lbl.iloc[0]
+
         if float(np.sum(class_lbl))/float(np.sum(1-class_lbl)) in[0,1]:
             self.data = None
             self.coef = None
